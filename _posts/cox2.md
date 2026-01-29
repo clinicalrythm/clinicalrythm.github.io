@@ -1,0 +1,12 @@
+---
+title: Safety of Cyclooxygenase-2 Inhibitors in Osteoarthritis: Outcomes of a Systematic Review and Meta-Analysis
+date: 2026-01-29 12:00:00 +0300
+categories: [orthopedics, pharmacology]
+tags: [osteoarthritis, pharmacology, drug safety]
+---
+
+A 2019 meta-analysis of 40 RCTs found that COX-2 inhibitors, while effective for osteoarthritis pain, significantly increase the risk of **drug-related adverse events**. ⚠️ Key risks include **upper gastrointestinal issues** like dyspepsia, gastritis, and **abdominal pain (↑40%)**, as well as **cardiovascular problems** including **hypertension (↑45%), heart failure, and edema (↑70%)**. The increased risk of hypertension was mainly driven by rofecoxib, but heart failure and edema remained high across COX-2 inhibitors.
+
+**Clinical Takeaway:** Use the **lowest effective dose for the shortest duration**, monitor patients closely, and exercise caution in those with **GI or cardiovascular risk factors**.  
+
+🔗 https://link.springer.com/article/10.1007/s40266-019-00664-x
