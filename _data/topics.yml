@@ -4,6 +4,7 @@
 #   title           heading shown on the site (optional, defaults to the folder name)
 #   blurb           one or two sentences under the heading (optional)
 #   readings_label  heading for the general document list (optional, defaults to "Readings")
+#   open            true to start this topic expanded on a first visit (optional, default collapsed)
 #
 # A folder that is not listed here still appears on the site, after these,
 # with a title taken from its name. Add an entry when you want a nicer title.

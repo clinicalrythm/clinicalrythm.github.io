@@ -63,18 +63,23 @@ Side effects: appends a nav item to nav_html and adds the file count to total.
   {%- endcase -%}
 {%- endfor -%}
 
-<section class="topic" id="{{ id }}" data-topic="{{ id }}">
-  <header class="topic-head">
-    <h2 class="topic-title">
-      {%- if number != '' %}<span class="topic-num" aria-hidden="true">{{ number }}</span>{% endif -%}
-      <span class="topic-name">{{ title }}</span>
-    </h2>
-    {%- if meta.blurb %}
-    <p class="topic-blurb">{{ meta.blurb }}</p>
-    {%- endif %}
-    <p class="topic-count"><span data-count="{{ id }}">{{ files.size }}</span> {% if files.size == 1 %}file{% else %}files{% endif %}</p>
-  </header>
-
+<details class="topic" id="{{ id }}" data-topic="{{ id }}"{% if meta.open %} open{% endif %}>
+  <summary class="topic-summary">
+    <span class="topic-head">
+      <span class="topic-title" role="heading" aria-level="2">
+        {%- if number != '' %}<span class="topic-num" aria-hidden="true">{{ number }}</span>{% endif -%}
+        <span class="topic-name">{{ title }}</span>
+      </span>
+      {%- if meta.blurb %}
+      <span class="topic-blurb">{{ meta.blurb }}</span>
+      {%- endif %}
+    </span>
+    <span class="topic-side">
+      <span class="topic-count"><span data-count="{{ id }}">{{ files.size }}</span> {% if files.size == 1 %}file{% else %}files{% endif %}</span>
+      <svg class="chev" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 8l5 5 5-5" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </span>
+  </summary>
+  <div class="topic-body">
   {%- if files.size == 0 %}
   <p class="empty">No files here yet. Anything added to the <code>{{ folder }}</code> folder in the repository appears here automatically.</p>
   {%- else %}
@@ -109,7 +114,8 @@ Side effects: appends a nav item to nav_html and adds the file count to total.
   </div>
   {%- endif %}
   {%- endif %}
-</section>
+  </div>
+</details>
 
 {%- capture beat -%}
 <li class="beat" data-beat="{{ id }}">

@@ -53,6 +53,14 @@ Files whose name contains `tanzania` get a Tanzania tag. To teach the site a new
 abbreviation or acronym, edit `_includes/resource.html` (sources) or `_includes/title.html`
 (acronyms); each is a one-line addition.
 
+## How the page behaves
+
+Every topic is collapsed when someone first opens the page. Tapping a topic heading, a beat
+on the strip, or "Expand all" opens it, and the browser remembers what each person left open.
+A search or a type filter opens the topics that have matches and closes them again when
+cleared. To make a topic start expanded for first-time visitors, add `open: true` to its
+entry in `_data/topics.yml`.
+
 ## Adding a topic
 
 Create a new folder in the root, for example `05. sepsis`, and put files in it. It appears
