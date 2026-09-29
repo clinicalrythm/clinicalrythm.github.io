@@ -29,6 +29,14 @@ list to maintain: add a file to a folder, push, and it appears on the site.
 Do not add a `.nojekyll` file to the repository. It switches Jekyll off, and the page needs
 Jekyll to build the file list.
 
+## Updating the site files
+
+When a new version of the site files arrives, copy the whole `_includes`, `_layouts`, `_data`
+and `assets` folders across, not single files from inside them. On a Mac, dropping a folder
+onto a folder with the same name replaces it completely (hold Option to merge instead), so a
+partial folder silently deletes the files it does not contain and the build fails with
+"Could not locate the included file".
+
 ## Adding files later
 
 Put the file in the topic folder, commit, push. The site rebuilds itself within a couple of

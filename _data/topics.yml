@@ -29,3 +29,15 @@
 - folder: "04. hiv"
   title: "HIV"
   blurb: "Natural history, antiretroviral therapy and drug resistance, undetectable equals untransmittable, advanced HIV disease and cryptococcal meningitis, primary care, and the national and WHO guidelines."
+
+- folder: "05. pneumonia"
+  title: "Pneumonia"
+  blurb: "Community-acquired pneumonia in adults, hospital-acquired and ventilator-associated pneumonia, glucocorticoids, a haemoptysis case, and the ATS and IDSA guidelines."
+
+- folder: "06. cns infections"
+  title: "CNS infections"
+  blurb: "Bacterial meningitis, encephalitis, cryptococcal meningoencephalitis, neurocysticercosis, meningococcal septic shock, neurological imaging in HIV, and the WHO meningitis guidelines."
+
+- folder: "07. sti"
+  title: "STIs"
+  blurb: "Sexually transmitted infections: syphilis, gonococcal infections, non-gonococcal urethritis, herpes simplex, bacterial vaginosis, doxycycline post-exposure prophylaxis, the Jarisch-Herxheimer reaction, and the national, CDC and WHO guidelines."

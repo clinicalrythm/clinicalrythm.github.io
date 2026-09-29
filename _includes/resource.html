@@ -1,0 +1,99 @@
+{%- comment -%}
+One file row.
+Inputs: file (a static file), category (slides | textbook | guidelines | readings | other),
+        topic (display title of the topic, used for search only)
+File names follow "author+year - title.ext", for example "harrisons2022 - fever.pdf".
+{%- endcomment -%}
+{%- assign f = include.file -%}
+{%- assign base = f.basename -%}
+{%- assign ext = f.extname | downcase | remove: '.' -%}
+{%- assign src = '' -%}
+{%- assign author = '' -%}
+{%- assign year = '' -%}
+{%- assign author_disp = '' -%}
+{%- assign title_raw = base -%}
+
+{%- if include.category == 'slides' -%}
+  {%- assign title_raw = base | replace: ' - ', ': ' -%}
+{%- elsif base contains ' - ' -%}
+  {%- assign parts = base | split: ' - ' -%}
+  {%- assign src = parts[0] | strip | downcase -%}
+  {%- assign title_raw = base | remove_first: parts[0] | remove_first: ' - ' | strip -%}
+  {%- assign author = src -%}
+  {%- if src.size > 4 -%}
+    {%- assign n = src.size | minus: 4 -%}
+    {%- assign tail = src | slice: n, 4 -%}
+    {%- assign tail_num = tail | plus: 0 -%}
+    {%- if tail_num > 1900 and tail_num < 2100 -%}
+      {%- assign year = tail -%}
+      {%- assign author = src | slice: 0, n -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- case author -%}
+    {%- when 'harrisons', 'harrison' -%}{%- assign author_disp = "Harrison's Principles of Internal Medicine" -%}
+    {%- when 'who' -%}{%- assign author_disp = 'World Health Organization' -%}
+    {%- when 'mohtz', 'moh' -%}{%- assign author_disp = 'Ministry of Health, Tanzania' -%}
+    {%- when 'nashcop' -%}{%- assign author_disp = 'NASHCoP, Tanzania' -%}
+    {%- when 'nmcp' -%}{%- assign author_disp = 'National Malaria Control Programme, Tanzania' -%}
+    {%- when 'ntlp' -%}{%- assign author_disp = 'NTLP, Tanzania' -%}
+    {%- when 'cdc' -%}{%- assign author_disp = 'CDC' -%}
+    {%- when 'nice' -%}{%- assign author_disp = 'NICE' -%}
+    {%- when 'idsa' -%}{%- assign author_disp = 'IDSA' -%}
+    {%- when 'bts' -%}{%- assign author_disp = 'British Thoracic Society' -%}
+    {%- when 'ecdc' -%}{%- assign author_disp = 'ECDC' -%}
+    {%- when 'unaids' -%}{%- assign author_disp = 'UNAIDS' -%}
+    {%- when 'unicef' -%}{%- assign author_disp = 'UNICEF' -%}
+    {%- when 'bmj' -%}{%- assign author_disp = 'BMJ' -%}
+    {%- when 'nejm' -%}{%- assign author_disp = 'NEJM' -%}
+    {%- when 'lancet' -%}{%- assign author_disp = 'The Lancet' -%}
+    {%- when 'crqb' -%}{%- assign author_disp = 'Clinical Rhythm question bank' -%}
+    {%- else -%}
+      {%- comment -%} Capitalise each part of names like o'malley or smith-jones {%- endcomment -%}
+      {%- capture author_disp -%}
+        {%- assign hy = author | split: '-' -%}
+        {%- for h in hy -%}
+          {%- assign ap = h | split: "'" -%}
+          {%- for a in ap -%}{{ a | capitalize }}{%- unless forloop.last -%}'{%- endunless -%}{%- endfor -%}
+          {%- unless forloop.last -%}-{%- endunless -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- assign author_disp = author_disp | strip -%}
+  {%- endcase -%}
+{%- endif -%}
+
+{%- capture title_disp -%}{%- include title.html text=title_raw -%}{%- endcapture -%}
+{%- assign title_disp = title_disp | strip -%}
+
+{%- assign tz = false -%}
+{%- if base contains 'tanzania' or author == 'mohtz' or author == 'nashcop' or author == 'nmcp' or author == 'ntlp' -%}{%- assign tz = true -%}{%- endif -%}
+{%- assign show_pill = tz -%}
+{%- if author_disp contains 'Tanzania' -%}{%- assign show_pill = false -%}{%- endif -%}
+
+{%- assign segs = f.path | split: '/' -%}
+{%- assign subpath = '' -%}
+{%- if segs.size > 3 -%}
+  {%- assign subpath = f.path | remove_first: '/' | remove_first: segs[1] | remove_first: '/' | remove: f.name | strip -%}
+{%- endif -%}
+
+{%- capture search_text -%}{{ title_disp }} {{ author_disp }} {{ year }} {{ include.topic }} {{ include.category }} {{ f.name }} {{ ext }}{% if tz %} tanzania{% endif %}{%- endcapture -%}
+<li class="resource" data-type="{{ include.category }}" data-search="{{ search_text | downcase | strip | escape }}">
+  <a class="res-link" href="{{ f.path | relative_url | uri_escape | escape }}" target="_blank" rel="noopener">
+    <span class="fmt fmt-{{ ext | default: 'file' }}">{{ ext | upcase | default: 'FILE' }}</span>
+    <span class="res-body">
+      <span class="res-title">{{ title_disp | escape }}</span>
+      <span class="res-meta">
+        {%- if ext == '' -%}
+          <span class="warn">No file extension. Rename it to end in .pptx or .pdf so it opens on every device.</span>
+        {%- elsif include.category == 'slides' -%}
+          Lecture slides
+        {%- elsif author_disp != '' -%}
+          {{ author_disp }}{% if year != '' %}, {{ year }}{% endif %}
+        {%- else -%}
+          {{ f.name | escape }}
+        {%- endif -%}
+        {%- if show_pill %} <span class="pill">Tanzania</span>{% endif -%}
+        {%- if subpath != '' %} <span class="sub">in {{ subpath | escape }}</span>{% endif -%}
+      </span>
+    </span>
+  </a>
+</li>
