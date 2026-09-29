@@ -1,0 +1,30 @@
+# One entry per topic folder, in the order they should appear on the page.
+#
+#   folder          exact folder name in the repository (required)
+#   title           heading shown on the site (optional, defaults to the folder name)
+#   blurb           one or two sentences under the heading (optional)
+#   readings_label  heading for the general document list (optional, defaults to "Readings")
+#
+# A folder that is not listed here still appears on the site, after these,
+# with a title taken from its name. Add an entry when you want a nicer title.
+
+- folder: "00. testbank"
+  title: "Test bank"
+  blurb: "Practice questions and self-assessment material covering the whole semester."
+  readings_label: "Question sets"
+
+- folder: "01. principles"
+  title: "Principles"
+  blurb: "Fever and its evaluation, antimicrobial stewardship and resistance, vaccination, prescribing in older adults, and the haematological changes that accompany infection."
+
+- folder: "02. malaria"
+  title: "Malaria"
+  blurb: "Diagnosis with rapid diagnostic tests, treatment, antimalarial drug resistance in Tanzania, severe malaria and anaemia, and the national and WHO guidelines."
+
+- folder: "03. tuberculosis"
+  title: "Tuberculosis"
+  blurb: "Diagnosis with Xpert MTB/RIF and urine LAM, treatment including the four-month rifapentine regimen, preventive treatment, TB with HIV and renal disease, extrapulmonary disease, and the WHO guidelines."
+
+- folder: "04. hiv"
+  title: "HIV"
+  blurb: "Natural history, antiretroviral therapy and drug resistance, undetectable equals untransmittable, advanced HIV disease and cryptococcal meningitis, primary care, and the national and WHO guidelines."

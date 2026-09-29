@@ -1,4 +1,63 @@
 ---
-layout: home
-# Index page
+layout: default
 ---
+{%- comment -%}
+Every file inside a top-level folder of the repository is listed here automatically.
+Topic order, titles and blurbs come from _data/topics.yml; folders not listed there
+are appended in name order.
+{%- endcomment -%}
+{%- assign groups = site.static_files | group_by_exp: "f", "f.path | split: '/' | slice: 1 | first" -%}
+{%- assign listed = site.data.topics | map: 'folder' -%}
+{%- assign sorted_groups = groups | sort: 'name' -%}
+
+{%- capture order_str -%}
+  {%- for t in site.data.topics -%}{{ t.folder }}|{%- endfor -%}
+  {%- for g in sorted_groups -%}
+    {%- assign first_segs = g.items[0].path | split: '/' -%}
+    {%- if first_segs.size > 2 and g.name != 'assets' -%}
+      {%- unless listed contains g.name -%}{{ g.name }}|{%- endunless -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+{%- assign order = order_str | strip | split: '|' -%}
+
+{%- assign nav_html = '' -%}
+{%- assign total = 0 -%}
+{%- capture sections_html -%}
+  {%- for folder in order -%}
+    {%- assign meta = site.data.topics | where: 'folder', folder | first -%}
+    {%- assign g = groups | where: 'name', folder | first -%}
+    {%- include topic.html folder=folder meta=meta files=g.items -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+<section class="hero">
+  <div class="hero-inner">
+    <h1 class="hero-title">{{ site.tagline }}</h1>
+    <p class="hero-lead">{{ site.description | strip_newlines }}</p>
+    <p class="hero-stats">{{ order.size }} topics, <span data-total>{{ total }}</span> files. Tap a beat to jump to a topic.</p>
+  </div>
+  <nav class="strip" aria-label="Topics">
+    <ol class="strip-list">
+      {{ nav_html }}
+    </ol>
+  </nav>
+</section>
+
+<div class="controls">
+  <div class="filters" role="group" aria-label="Show only">
+    <button type="button" class="chip is-active" data-type="all" aria-pressed="true">Everything</button>
+    <button type="button" class="chip" data-type="slides" aria-pressed="false">Slides</button>
+    <button type="button" class="chip" data-type="textbook" aria-pressed="false">Textbook</button>
+    <button type="button" class="chip" data-type="guidelines" aria-pressed="false">Guidelines</button>
+    <button type="button" class="chip" data-type="readings" aria-pressed="false">Readings</button>
+    <button type="button" class="chip" data-type="other" aria-pressed="false">Other</button>
+  </div>
+  <p class="results" data-results aria-live="polite"></p>
+</div>
+
+<div class="topics">
+  {{ sections_html }}
+</div>
+
+<p class="none-found" data-none hidden>No files match. Try a shorter word, an author's name, or clear the search.</p>

@@ -1,0 +1,126 @@
+{%- comment -%}
+One topic section.
+Inputs: folder (string), meta (entry from _data/topics.yml or nil), files (static files in the folder or nil)
+Side effects: appends a nav item to nav_html and adds the file count to total.
+{%- endcomment -%}
+{%- assign folder = include.folder -%}
+{%- assign meta = include.meta -%}
+{%- if include.files -%}
+  {%- assign files = include.files | sort: 'name' -%}
+{%- else -%}
+  {%- assign files = '' | split: ',' -%}
+{%- endif -%}
+
+{%- assign nparts = folder | split: '. ' -%}
+{%- if nparts.size > 1 -%}
+  {%- assign number = nparts[0] -%}
+  {%- assign short = folder | remove_first: nparts[0] | remove_first: '. ' -%}
+{%- else -%}
+  {%- assign number = '' -%}
+  {%- assign short = folder -%}
+{%- endif -%}
+{%- if meta.title -%}
+  {%- assign title = meta.title -%}
+{%- else -%}
+  {%- capture title -%}{%- include title.html text=short -%}{%- endcapture -%}
+  {%- assign title = title | strip -%}
+{%- endif -%}
+{%- assign id = meta.id | default: short | slugify -%}
+{%- assign readings_label = meta.readings_label | default: 'Readings' -%}
+
+{%- assign slides_html = '' -%}
+{%- assign textbook_html = '' -%}
+{%- assign guidelines_html = '' -%}
+{%- assign readings_html = '' -%}
+{%- assign other_html = '' -%}
+{%- assign n_slides = 0 -%}
+{%- assign n_textbook = 0 -%}
+{%- assign n_guidelines = 0 -%}
+{%- assign n_readings = 0 -%}
+{%- assign n_other = 0 -%}
+
+{%- for f in files -%}
+  {%- assign ext = f.extname | downcase -%}
+  {%- assign nm = f.name | downcase -%}
+  {%- if ext == '.pptx' or ext == '.ppt' or ext == '.ppsx' or ext == '.pps' or ext == '.key' or ext == '.odp' -%}
+    {%- assign cat = 'slides' -%}
+  {%- elsif nm contains 'harrisons' or nm contains 'harrison20' -%}
+    {%- assign cat = 'textbook' -%}
+  {%- elsif nm contains 'who20' or nm contains 'mohtz' or nm contains 'nashcop' or nm contains 'nmcp20' or nm contains 'ntlp20' or nm contains 'guideline' or nm contains 'recommendation' -%}
+    {%- assign cat = 'guidelines' -%}
+  {%- elsif ext == '.pdf' or ext == '.doc' or ext == '.docx' or ext == '.odt' or ext == '.rtf' or ext == '.txt' or ext == '.md' or ext == '.epub' -%}
+    {%- assign cat = 'readings' -%}
+  {%- else -%}
+    {%- assign cat = 'other' -%}
+  {%- endif -%}
+  {%- capture row -%}{%- include resource.html file=f category=cat topic=title -%}{%- endcapture -%}
+  {%- case cat -%}
+    {%- when 'slides' -%}{%- assign slides_html = slides_html | append: row -%}{%- assign n_slides = n_slides | plus: 1 -%}
+    {%- when 'textbook' -%}{%- assign textbook_html = textbook_html | append: row -%}{%- assign n_textbook = n_textbook | plus: 1 -%}
+    {%- when 'guidelines' -%}{%- assign guidelines_html = guidelines_html | append: row -%}{%- assign n_guidelines = n_guidelines | plus: 1 -%}
+    {%- when 'readings' -%}{%- assign readings_html = readings_html | append: row -%}{%- assign n_readings = n_readings | plus: 1 -%}
+    {%- else -%}{%- assign other_html = other_html | append: row -%}{%- assign n_other = n_other | plus: 1 -%}
+  {%- endcase -%}
+{%- endfor -%}
+
+<section class="topic" id="{{ id }}" data-topic="{{ id }}">
+  <header class="topic-head">
+    <h2 class="topic-title">
+      {%- if number != '' %}<span class="topic-num" aria-hidden="true">{{ number }}</span>{% endif -%}
+      <span class="topic-name">{{ title }}</span>
+    </h2>
+    {%- if meta.blurb %}
+    <p class="topic-blurb">{{ meta.blurb }}</p>
+    {%- endif %}
+    <p class="topic-count"><span data-count="{{ id }}">{{ files.size }}</span> {% if files.size == 1 %}file{% else %}files{% endif %}</p>
+  </header>
+
+  {%- if files.size == 0 %}
+  <p class="empty">No files here yet. Anything added to the <code>{{ folder }}</code> folder in the repository appears here automatically.</p>
+  {%- else %}
+  {%- if n_slides > 0 %}
+  <div class="group group-slides">
+    <h3 class="group-title">Lecture slides</h3>
+    <ul class="list list-slides">{{ slides_html }}</ul>
+  </div>
+  {%- endif %}
+  {%- if n_textbook > 0 %}
+  <div class="group">
+    <h3 class="group-title">{% if n_textbook == 1 %}Textbook chapter{% else %}Textbook chapters{% endif %}</h3>
+    <ul class="list">{{ textbook_html }}</ul>
+  </div>
+  {%- endif %}
+  {%- if n_guidelines > 0 %}
+  <div class="group">
+    <h3 class="group-title">Guidelines <span class="group-n">{{ n_guidelines }}</span></h3>
+    <ul class="list">{{ guidelines_html }}</ul>
+  </div>
+  {%- endif %}
+  {%- if n_readings > 0 %}
+  <div class="group">
+    <h3 class="group-title">{{ readings_label }} <span class="group-n">{{ n_readings }}</span></h3>
+    <ul class="list">{{ readings_html }}</ul>
+  </div>
+  {%- endif %}
+  {%- if n_other > 0 %}
+  <div class="group">
+    <h3 class="group-title">Other files <span class="group-n">{{ n_other }}</span></h3>
+    <ul class="list">{{ other_html }}</ul>
+  </div>
+  {%- endif %}
+  {%- endif %}
+</section>
+
+{%- capture beat -%}
+<li class="beat" data-beat="{{ id }}">
+  <a href="#{{ id }}">
+    <svg class="beat-line" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M0 42 H56 C60 42 62 36 66 36 C70 36 72 42 76 42 H86 L90 47 L98 12 L106 52 L110 42 H122 C128 42 132 30 140 30 C148 30 152 42 158 42 H200" vector-effect="non-scaling-stroke"></path>
+    </svg>
+    <span class="beat-name">{{ title }}</span>
+    <span class="beat-count"><span data-count="{{ id }}">{{ files.size }}</span> {% if files.size == 1 %}file{% else %}files{% endif %}</span>
+  </a>
+</li>
+{%- endcapture -%}
+{%- assign nav_html = nav_html | append: beat -%}
+{%- assign total = total | plus: files.size -%}

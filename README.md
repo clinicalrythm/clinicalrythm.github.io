@@ -1,43 +1,92 @@
-# Chirpy Starter
+# Clinical Rhythm, Semester 2 coursework resources
 
-[![Gem Version](https://img.shields.io/gem/v/jekyll-theme-chirpy)][gem]&nbsp;
-[![GitHub license](https://img.shields.io/github/license/cotes2020/chirpy-starter.svg?color=blue)][mit]
+This repository is the source of https://clinicalrythm.github.io/. GitHub Pages builds it
+with Jekyll, and the page lists every file it finds inside the topic folders. There is no
+list to maintain: add a file to a folder, push, and it appears on the site.
 
-When installing the [**Chirpy**][chirpy] theme through [RubyGems.org][gem], Jekyll can only read files in the folders
-`_data`, `_layouts`, `_includes`, `_sass` and `assets`, as well as a small part of options of the `_config.yml` file
-from the theme's gem. If you have ever installed this theme gem, you can use the command
-`bundle info --path jekyll-theme-chirpy` to locate these files.
+## First deployment
 
-The Jekyll team claims that this is to leave the ball in the user’s court, but this also results in users not being
-able to enjoy the out-of-the-box experience when using feature-rich themes.
+1. Copy everything in this folder into the root of the `clinicalrythm.github.io` repository,
+   including the hidden files (`.gitignore` and the `.gitkeep` inside each topic folder).
+2. Move your course files into the matching folders:
 
-To fully use all the features of **Chirpy**, you need to copy the other critical files from the theme's gem to your
-Jekyll site. The following is a list of targets:
+   ```
+   00. testbank/
+   01. principles/
+   02. malaria/
+   03. tuberculosis/
+   04. hiv/
+   ```
 
-```shell
-.
-├── _config.yml
-├── _plugins
-├── _tabs
-└── index.html
+   Keep the folder names exactly as they are, spaces and full stops included.
+3. Commit and push to the `main` branch.
+4. On GitHub open Settings, then Pages. Under "Build and deployment" choose
+   "Deploy from a branch", branch `main`, folder `/ (root)`. This is the default for a
+   new `username.github.io` repository, so it is usually already set. If the source is set to
+   "GitHub Actions" with the Jekyll workflow, that works too.
+5. Wait a minute or two, then open https://clinicalrythm.github.io/.
+
+Do not add a `.nojekyll` file to the repository. It switches Jekyll off, and the page needs
+Jekyll to build the file list.
+
+## Adding files later
+
+Put the file in the topic folder, commit, push. The site rebuilds itself within a couple of
+minutes. Nothing else needs editing.
+
+Name files as `author+year - title.ext`, all lowercase, for example
+`harrisons2022 - fever.pdf` or `who2025 - malaria guidelines.pdf`. The site turns that into a
+readable title, source and year, and restores common acronyms (HIV, LAM, MTB/RIF, CD4).
+Files without the ` - ` separator still appear, shown by their name.
+
+How each file is grouped on the page:
+
+| Group           | Rule                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------- |
+| Lecture slides  | `.pptx`, `.ppt`, `.key`, `.odp`                                                             |
+| Textbook        | name starts with `harrisons`                                                                |
+| Guidelines      | name starts with `who20`, `mohtz`, `nashcop`, `nmcp20`, `ntlp20`, or contains `guideline` or `recommendation` |
+| Readings        | any other `.pdf`, `.doc`, `.docx`, `.odt`, `.txt`, `.md`                                     |
+| Other files     | everything else, for example `.png` figures                                                 |
+
+Files whose name contains `tanzania` get a Tanzania tag. To teach the site a new source
+abbreviation or acronym, edit `_includes/resource.html` (sources) or `_includes/title.html`
+(acronyms); each is a one-line addition.
+
+## Adding a topic
+
+Create a new folder in the root, for example `05. sepsis`, and put files in it. It appears
+on the site after the listed topics, titled from the folder name. For a custom title or a
+blurb, add an entry to `_data/topics.yml`; that file also controls the order of the topics.
+
+## Things to check in the current files
+
+- In `04. hiv` there is a file shown in Finder as just `hiv` with a PowerPoint icon. Make sure
+  its name is really `hiv.pptx` (Finder may be hiding the extension: select it, press
+  Command-I and untick "Hide extension"). A file with no extension is flagged on the site
+  and will not open properly on Windows or Android.
+- Avoid `#`, `?`, `%` and `&` in file names. They break web links.
+- GitHub rejects any single file over 100 MB. A large `.pptx` usually shrinks a lot with
+  File, then Compress Pictures in PowerPoint, or export it to PDF. Keep the whole repository
+  under 1 GB, which is the GitHub Pages limit.
+- The site is public. `search_engines: false` in `_config.yml` asks search engines not to
+  index it, which keeps it out of Google but does not hide it from anyone with the link.
+
+## Changing the wording
+
+- Site name, tagline and description: `_config.yml`
+- Topic titles, blurbs and order: `_data/topics.yml`
+- Colours and typography: `assets/css/site.css` (brand blue and green, Figtree)
+- Group labels ("Lecture slides", "Readings"): `_includes/topic.html`
+
+## Previewing on your own machine (optional)
+
+You need Ruby and Bundler. From the repository folder:
+
+```
+bundle install
+bundle exec jekyll serve
 ```
 
-To save you time, and also in case you lose some files while copying, we extract those files/configurations of the
-latest version of the **Chirpy** theme and the [CD][CD] workflow to here, so that you can start writing in minutes.
-
-## Usage
-
-Check out the [theme's docs](https://github.com/cotes2020/jekyll-theme-chirpy/wiki).
-
-## Contributing
-
-This repository is automatically updated with new releases from the theme repository. If you encounter any issues or want to contribute to its improvement, please visit the [theme repository][chirpy] to provide feedback.
-
-## License
-
-This work is published under [MIT][mit] License.
-
-[gem]: https://rubygems.org/gems/jekyll-theme-chirpy
-[chirpy]: https://github.com/cotes2020/jekyll-theme-chirpy/
-[CD]: https://en.wikipedia.org/wiki/Continuous_deployment
-[mit]: https://github.com/cotes2020/chirpy-starter/blob/master/LICENSE
+Then open http://127.0.0.1:4000/. The `Gemfile` pins the same Jekyll version GitHub Pages
+uses. Pushing to GitHub is the only step that publishes anything.

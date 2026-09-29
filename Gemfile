@@ -1,14 +1,4 @@
-# frozen_string_literal: true
-
+# Only needed for previewing the site on your own computer.
+# GitHub Pages ignores this file and uses its own copy of the same gem.
 source "https://rubygems.org"
-
-gem "jekyll-theme-chirpy", "~> 7.4", ">= 7.4.1"
-
-gem "html-proofer", "~> 5.0", group: :test
-
-platforms :mingw, :x64_mingw, :mswin, :jruby do
-  gem "tzinfo", ">= 1", "< 3"
-  gem "tzinfo-data"
-end
-
-gem "wdm", "~> 0.2.0", :platforms => [:mingw, :x64_mingw, :mswin]
+gem "github-pages", group: :jekyll_plugins
