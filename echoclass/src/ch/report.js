@@ -1,0 +1,299 @@
+// Report (hidden): one study, written up. Four simulated teaching cases; the report follows the ASE
+// 2025 reporting guideline: summary statement at the top, then each structure, structure
+// before function, then the measurements. Sex sets the normal ranges.
+import { langGrade, lvGeometry, LANG, lvefBand, glsBand, tapseGrade, sPrimeGrade, trvGrade, rapFromIvc } from '../norms.js';
+import { lapAlgorithm } from './fill.js';
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const bsa = (h, w) => Math.sqrt((h * w) / 3600);
+
+// Simulated cases for teaching (not patient data).
+const CASES = {
+  normal: {
+    title: 'Normal study',
+    age: 45, height: 172, weight: 72, bp: '118/76', hr: 64, rhythm: 'sinus rhythm', indication: 'Heart murmur.',
+    lvidd: 4.6, ivs: 0.9, pw: 0.9, lvmi: 78, edv: 105, esv: 40, gls: -20, wm: 'none',
+    E: 0.75, A: 0.6, sep: 8.5, lat: 11, tr: 2.3, lavi: 26, lars: 36, sd: 1.3, ivrt: 88,
+    tapse: 22, sPrime: 12, rvb: 3.6, ivcD: 1.6, ivcCollapse: true,
+    av: { text: 'The aortic valve is trileaflet and normal in structure. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral valve is normal in structure. Trace mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Trace tricuspid regurgitation.',
+    positives: [], negatives: ['No significant valve disease.'],
+  },
+  hfref: {
+    title: 'Dilated LV with severe secondary MR',
+    age: 63, height: 178, weight: 84, bp: '104/68', hr: 88, rhythm: 'sinus rhythm', indication: 'Heart failure with dyspnea on exertion.',
+    lvidd: 6.6, ivs: 0.8, pw: 0.8, lvmi: 142, edv: 230, esv: 170, gls: -8, wm: 'global hypokinesis',
+    E: 1.1, A: 0.4, sep: 4.0, lat: 5.5, tr: 3.2, lavi: 52, lars: 9, sd: 0.4, ivrt: 55,
+    tapse: 14, sPrime: 8.5, rvb: 4.3, ivcD: 2.3, ivcCollapse: false,
+    av: { text: 'The aortic valve is trileaflet and normal in structure. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral leaflets are normal in structure and are tethered by the dilated left ventricle. Severe secondary mitral regurgitation: EROA 0.42 cm² (PISA), regurgitant volume 63 mL, vena contracta 0.7 cm.', severe: 'Severe secondary mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Mild tricuspid regurgitation.',
+    positives: [], negatives: ['No LV thrombus seen.'],
+  },
+  as: {
+    title: 'Severe aortic stenosis',
+    age: 78, height: 168, weight: 76, bp: '146/78', hr: 68, rhythm: 'sinus rhythm', indication: 'Systolic murmur and dyspnea on exertion.',
+    lvidd: 4.6, ivs: 1.4, pw: 1.3, lvmi: 132, edv: 95, esv: 38, gls: -15, wm: 'none',
+    E: 1.0, A: 1.1, sep: 5.0, lat: 6.5, tr: 2.9, lavi: 40, lars: 17, sd: 0.9, ivrt: 78,
+    tapse: 21, sPrime: 11.5, rvb: 3.7, ivcD: 1.7, ivcCollapse: true,
+    av: { text: 'The aortic valve is trileaflet and severely calcified, with restricted cusp opening. Severe aortic stenosis: peak velocity 4.4 m/s, mean gradient 48 mmHg, aortic valve area 0.75 cm² by the continuity equation (indexed 0.40 cm²/m²), velocity ratio 0.22. Stroke volume index 38 mL/m², consistent with normal flow. Trace aortic regurgitation.', severe: 'Severe aortic stenosis (peak velocity 4.4 m/s, mean gradient 48 mmHg, valve area 0.75 cm²).' },
+    mv: { text: 'The mitral valve has mild annular calcification. Mild mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Trace tricuspid regurgitation.',
+    positives: [], negatives: [],
+  },
+  hfpef: {
+    title: 'Hypertensive heart disease, raised filling pressure',
+    age: 72, height: 160, weight: 82, bp: '152/84', hr: 72, rhythm: 'sinus rhythm', indication: 'Dyspnea on exertion.',
+    lvidd: 4.4, ivs: 1.2, pw: 1.2, lvmi: 100, edv: 90, esv: 34, gls: -16.5, wm: 'none',
+    E: 0.95, A: 0.8, sep: 5.5, lat: 7.0, tr: 3.0, lavi: 44, lars: 16, sd: 0.8, ivrt: 66,
+    tapse: 20, sPrime: 11, rvb: 3.8, ivcD: 2.2, ivcCollapse: true,
+    av: { text: 'The aortic valve is trileaflet with mild cusp thickening. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral valve is normal in structure. Trace mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Mild tricuspid regurgitation.',
+    positives: [], negatives: ['No significant valve disease.'],
+  },
+  // one case for each disease heart in the header (pheno.js); its button shows under that heart
+  amyloid: {
+    title: 'Cardiac amyloidosis',
+    age: 74, height: 175, weight: 70, bp: '108/70', hr: 78, rhythm: 'sinus rhythm', indication: 'Dyspnea and ankle edema; bilateral carpal tunnel syndrome.',
+    lvidd: 4.1, ivs: 1.6, pw: 1.5, lvmi: 138, edv: 72, esv: 33, gls: -11, wm: 'none',
+    lvText: 'The myocardium has a granular, sparkling texture. Longitudinal strain is most reduced at the base and relatively preserved at the apex (relative apical sparing).',
+    E: 1.0, A: 0.35, sep: 4.0, lat: 5.0, tr: 3.0, lavi: 60, lars: 10, sd: 0.5, ivrt: 50,
+    tapse: 15, sPrime: 9, rvb: 3.9, ivcD: 2.2, ivcCollapse: false,
+    rvText: 'The RV free wall is thickened (0.7 cm).',
+    raText: 'Mildly dilated; the interatrial septum is thickened.',
+    av: { text: 'The aortic valve is trileaflet with mildly thickened cusps. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral leaflets are thickened. Mild mitral regurgitation.' },
+    trText: 'The tricuspid leaflets are thickened. Mild tricuspid regurgitation.',
+    periText: 'Small pericardial effusion (0.7 cm at end-diastole), without echocardiographic signs of tamponade.',
+    positives: ['Increased LV wall thickness with a granular myocardial texture, relative apical sparing of longitudinal strain, a restrictive filling pattern and a small pericardial effusion; the combination raises concern for cardiac amyloidosis.'],
+    negatives: ['No significant valve disease.'],
+  },
+  icm: {
+    title: 'Ischemic cardiomyopathy',
+    age: 66, height: 176, weight: 88, bp: '112/70', hr: 76, rhythm: 'sinus rhythm', indication: 'Anterior myocardial infarction two years ago; dyspnea on exertion.',
+    lvidd: 6.4, ivs: 0.9, pw: 1.0, lvmi: 125, edv: 222, esv: 167, gls: -8, wm: 'akinesis of the LAD territory (anterior wall, anterior septum and apex); the apex is thin',
+    E: 0.8, A: 0.6, sep: 4.5, lat: 6.0, tr: 3.1, lavi: 40, lars: 12, sd: 0.6, ivrt: 62,
+    tapse: 16, sPrime: 9.5, rvb: 4.0, ivcD: 1.9, ivcCollapse: false,
+    av: { text: 'The aortic valve is trileaflet and normal in structure. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral leaflets are normal in structure; the posterior leaflet is tethered by the dilated left ventricle. Trace mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Mild tricuspid regurgitation.',
+    positives: ['Akinesis of the LAD territory with a thinned apex, consistent with a prior anterior myocardial infarction.'],
+    negatives: ['No LV thrombus seen.'],
+  },
+  barlow: {
+    title: 'Barlow mitral valve, severe mitral regurgitation',
+    age: 52, height: 180, weight: 78, bp: '124/76', hr: 70, rhythm: 'sinus rhythm', indication: 'Loud systolic murmur; palpitations.',
+    lvidd: 6.2, ivs: 0.9, pw: 0.9, lvmi: 116, edv: 183, esv: 60, gls: -21, wm: 'none',
+    lvText: 'LV end-systolic diameter 3.7 cm.',
+    E: 1.14, A: 0.53, sep: 9.0, lat: 12, tr: 2.7, lavi: 45, lars: 30, sd: 0.1, ivrt: 80,
+    tapse: 23, sPrime: 13, rvb: 3.8, ivcD: 1.7, ivcCollapse: true,
+    av: { text: 'The aortic valve is trileaflet and normal in structure. There is no aortic stenosis or regurgitation.' },
+    mv: { text: 'The mitral valve is myxomatous, with thickened, redundant anterior and posterior leaflets that prolapse into the left atrium (Barlow disease). Severe primary mitral regurgitation: EROA 0.46 cm² (PISA), regurgitant volume 70 mL, regurgitant fraction 54%, vena contracta 0.8 cm; blunted systolic pulmonary venous flow.', severe: 'Severe primary mitral regurgitation due to bileaflet prolapse (EROA 0.46 cm², regurgitant volume 70 mL).' },
+    trText: 'The tricuspid valve is normal in structure. Mild tricuspid regurgitation.',
+    positives: [], negatives: ['No flail segment seen.'],
+  },
+  bav: {
+    title: 'Bicuspid aortic valve, severe aortic stenosis',
+    age: 58, height: 178, weight: 82, bp: '138/80', hr: 66, rhythm: 'sinus rhythm', indication: 'Systolic murmur; dyspnea on exertion.',
+    lvidd: 4.6, ivs: 1.2, pw: 1.2, lvmi: 103, edv: 90, esv: 33, gls: -16, wm: 'none',
+    E: 0.7, A: 0.95, sep: 6.0, lat: 8.0, tr: 2.6, lavi: 33, lars: 24, sd: 1.2, ivrt: 95,
+    tapse: 22, sPrime: 12, rvb: 3.6, ivcD: 1.6, ivcCollapse: true,
+    av: { text: 'The aortic valve is bicuspid, with fusion of the right and left coronary cusps and a raphe; the valve domes in systole, with a slit-like opening. The cusps are calcified. Severe aortic stenosis: peak velocity 4.5 m/s, mean gradient 48 mmHg, aortic valve area 0.76 cm² by the continuity equation (indexed 0.38 cm²/m²), velocity ratio 0.24. Stroke volume index 37 mL/m², consistent with normal flow. Mild aortic regurgitation.', severe: 'Severe aortic stenosis of a bicuspid aortic valve (peak velocity 4.5 m/s, mean gradient 48 mmHg, valve area 0.76 cm²).' },
+    mv: { text: 'The mitral valve is normal in structure. Trace mitral regurgitation.' },
+    trText: 'The tricuspid valve is normal in structure. Trace tricuspid regurgitation.',
+    aortaText: 'The aortic root measures 3.3 cm at the sinuses of Valsalva. The ascending aorta is mildly dilated at 3.9 cm (bicuspid aortopathy). No coarctation is seen from the suprasternal window.',
+    positives: ['Mildly dilated ascending aorta (3.9 cm).'], negatives: [],
+  },
+};
+
+const NAME = { eject: 'Systolic function', fill: 'Diastolic function', pressure: 'Doppler hemodynamics', as: 'Aortic stenosis', mr: 'Mitral regurgitation', ivc: 'Inferior vena cava' };
+// Links from the report to the chapters behind its values are off: the text names a chapter only
+// in its header. The code stays. A chapter's number is read from the page, so it stays right
+// when chapters move.
+const SHOW_LINKS = false;
+const numOf = (key) => document.getElementById(`ch-${key}`)?.querySelector('.ch-num')?.textContent.trim() ?? '';
+const GO = (key) => (SHOW_LINKS ? `<a class="go" href="#${key}" data-go="${key}">${numOf(key)} ${NAME[key] || key} →</a>` : '');
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
+const f1 = (v) => v.toFixed(1), f0 = (v) => v.toFixed(0);
+
+export function buildReport(caseId, sex) {
+  const c = CASES[caseId];
+  const B = bsa(c.height, c.weight);
+  const ef = Math.round(((c.edv - c.esv) / c.edv) * 100);
+  const edvi = c.edv / B, esvi = c.esv / B;
+  const rwt = (2 * c.pw) / c.lvidd;
+  const geo = lvGeometry(c.lvmi, rwt, sex);
+  const size = langGrade('edvi', edvi, sex), sizeD = langGrade('lvidd', c.lvidd, sex);
+  const lvSize = [size, sizeD].includes('severely') ? 'severely' : [size, sizeD].includes('moderately') ? 'moderately' : [size, sizeD].includes('mildly') ? 'mildly' : 'normal';
+  const band = lvefBand(ef, sex);
+  const wallHi = langGrade('ivs', c.ivs, sex) !== 'normal' || langGrade('pw', c.pw, sex) !== 'normal';
+  const avg = (c.sep + c.lat) / 2;
+  const dv = { E: c.E, A: c.A, sep: c.sep, lat: c.lat, avg, ea: c.E / c.A, eeSep: (c.E * 100) / c.sep, eeLat: (c.E * 100) / c.lat, eeAvg: (c.E * 100) / avg, tr: c.tr, lavi: c.lavi, lars: c.lars, sd: c.sd, ivrt: c.ivrt };
+  const lap = lapAlgorithm(dv);
+  const rap = rapFromIvc(c.ivcD, c.ivcCollapse);
+  const rvsp = Math.round(4 * c.tr * c.tr + rap);
+  const la = langGrade('lavi', c.lavi, sex);
+  const rvF = tapseGrade(c.tapse), rvS = sPrimeGrade(c.sPrime);
+  const rvFun = rvF === 'normal' && rvS === 'normal' ? 'normal' : rvF === 'normal' ? rvS : rvF;
+  const gls = glsBand(c.gls);
+  const diaText = lap.grade === null ? 'Diastolic function: LA pressure is normal; the grade cannot be assigned.'
+    : lap.grade === 0 ? 'Normal diastolic function; normal LA pressure.'
+      : `Grade ${lap.grade} diastolic dysfunction; ${lap.lap === 'raised' ? 'raised' : 'normal'} LA pressure.`;
+  const lvFun = band === 'normal' || band === 'hyperdynamic' ? 'normal' : band;
+
+  // summary statement (Taub 2025: LV and RV function, significant valve disease, positives, pertinent negatives, comparison)
+  const sum = [];
+  sum.push(`${lvFun === 'normal' ? 'Normal' : cap(lvFun)} LV systolic function, LVEF ${ef}% (biplane). ${rvFun === 'normal' ? 'Normal RV systolic function.' : `${cap(rvFun)} RV systolic function.`}`);
+  const valves = [c.av.severe, c.mv.severe].filter(Boolean);
+  sum.push(valves.length ? valves.join(' ') : 'No significant valve disease.');
+  if (lvSize !== 'normal') sum.push(`${cap(lvSize)} dilated left ventricle.`);
+  if (geo !== 'normal geometry') sum.push(`${cap(geo)} of the left ventricle.`);
+  if (lap.grade) sum.push(`Grade ${lap.grade} diastolic dysfunction with ${lap.lap} LA pressure.`);
+  if (c.tr >= 2.9) sum.push(`Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.`);
+  for (const p of c.positives) sum.push(p);
+  for (const n of c.negatives) if (!sum.includes(n)) sum.push(n);
+  sum.push('No prior study is available for comparison.');
+
+  const rows = [
+    ['LV diameter, end-diastole', `${f1(c.lvidd)} cm`, rng('lvidd', sex), langGrade('lvidd', c.lvidd, sex)],
+    ['Septum, end-diastole', `${f1(c.ivs)} cm`, rng('ivs', sex), langGrade('ivs', c.ivs, sex)],
+    ['Inferolateral wall, end-diastole', `${f1(c.pw)} cm`, rng('pw', sex), langGrade('pw', c.pw, sex)],
+    ['Relative wall thickness', rwt.toFixed(2), '≤0.42', rwt > 0.42 ? 'increased' : 'normal'],
+    ['LV mass index', `${f0(c.lvmi)} g/m²`, rng('lvmi', sex), langGrade('lvmi', c.lvmi, sex)],
+    ['LV end-diastolic volume index', `${f0(edvi)} mL/m²`, rng('edvi', sex), size],
+    ['LV end-systolic volume index', `${f0(esvi)} mL/m²`, rng('esvi', sex), langGrade('esvi', esvi, sex)],
+    ['LVEF, biplane', `${ef}%`, sex === 'F' ? '54–74%' : '52–72%', band],
+    ['Global longitudinal strain', `${String(c.gls).replace('-', '−')}%`, 'more negative than −18%', gls],
+    ['LA volume index', `${f0(c.lavi)} mL/m²`, '16–34 mL/m²', la],
+    ['Mitral E / A', `${c.E.toFixed(2)} / ${c.A.toFixed(2)} m/s`, '', ''],
+    ['Average e′ · average E/e′', `${f1(avg)} cm/s · ${f1(dv.eeAvg)}`, '>6.5 cm/s · <14', avg <= 6.5 || dv.eeAvg >= 14 ? 'abnormal' : 'normal'],
+    ['TAPSE', `${f0(c.tapse)} mm`, '>17 mm', rvF],
+    ['RV S′', `${f1(c.sPrime)} cm/s`, '>9.5 cm/s', rvS],
+    ['Peak TR velocity', `${f1(c.tr)} m/s`, '<2.8 m/s', trvGrade(c.tr)],
+    ['RA pressure (IVC)', `${rap} mmHg`, '3 mmHg', rap > 3 ? 'raised' : 'normal'],
+    ['RV systolic pressure', `${rvsp} mmHg`, '', ''],
+  ];
+
+  // the findings in plain text, one for each section of a report as EchoPrime names them
+  // (echoprime.js SECTIONS); the findings below, and sectionTexts, take them from here
+  const lvHead = `${lvSize === 'normal' ? 'Normal size' : `${cap(lvSize)} dilated`} (LV end-diastolic diameter ${f1(c.lvidd)} cm; end-diastolic volume index ${f0(edvi)} mL/m²). ${wallHi ? 'Wall thickness is increased' : 'Wall thickness is normal'} (interventricular septum ${f1(c.ivs)} cm, inferolateral wall ${f1(c.pw)} cm); ${geo}. ${lvFun === 'normal' ? 'Normal' : cap(lvFun)} systolic function: LVEF ${ef}% by the biplane method of disks; global longitudinal strain ${String(c.gls).replace('-', '−')}% (${gls}).`;
+  const lvTail = `${c.lvText ? `${c.lvText} ` : ''}${diaText}`;
+  const texts = {
+    lv: `${lvHead} ${lvTail}`,
+    wm: c.wm === 'none' ? 'No regional wall motion abnormality.' : `${cap(c.wm)}.`,
+    rv: `${langRV(c.rvb)}${c.rvText ? ` ${c.rvText}` : ''} RV systolic function is ${rvFun} (TAPSE ${f0(c.tapse)} mm, RV S′ ${f1(c.sPrime)} cm/s).`,
+    la: `${la === 'normal' ? 'Normal size' : `${cap(la)} dilated`} (LA volume index ${f0(c.lavi)} mL/m²).`,
+    ra: c.raText || 'Normal size.',
+    ias: 'The atrial septum is intact by color Doppler.',
+    mv: c.mv.text,
+    av: c.av.text,
+    tv: `${c.trText} Peak TR velocity ${f1(c.tr)} m/s; estimated RV systolic pressure ${rvsp} mmHg.`,
+    pv: 'The pulmonic valve is normal in structure. Trace pulmonic regurgitation.',
+    peri: c.periText || 'No pericardial effusion.',
+    aorta: c.aortaText || 'The aortic root and proximal ascending aorta are normal in size.',
+    ivc: `Diameter ${f1(c.ivcD)} cm, with ${c.ivcCollapse ? 'more' : 'less'} than 50% collapse on sniff. Estimated RA pressure ${rap} mmHg.`,
+    pa: 'The main pulmonary artery is normal in size.',
+    pveins: `Pulmonary vein flow is ${c.sd >= 1 ? 'systolic' : 'diastolic'} predominant (S/D ${f1(c.sd)}).`,
+  };
+
+  const html = `
+    <div class="sheet">
+      <h2>Transthoracic echocardiogram</h2>
+      <p class="note">Simulated teaching case: ${esc(c.title)}. This is not a patient record.</p>
+      <div class="meta">
+        <div><span>Age · sex</span>${c.age} · ${sex === 'F' ? 'female' : 'male'}</div>
+        <div><span>Height · weight</span>${c.height} cm · ${c.weight} kg</div>
+        <div><span>Body surface area</span>${B.toFixed(2)} m²</div>
+        <div><span>Blood pressure</span>${c.bp} mmHg</div>
+        <div><span>Heart rate · rhythm</span>${c.hr}/min · ${c.rhythm}</div>
+        <div><span>Indication</span>${esc(c.indication)}</div>
+        <div><span>Protocol · priority</span>Comprehensive · routine</div>
+        <div><span>Image quality</span>Good; all windows obtained</div>
+      </div>
+      <h3>Summary statement</h3>
+      <ol class="impression">${sum.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
+      <h3>Findings</h3>
+      <div class="finding"><p><b>Left ventricle.</b> ${esc(lvHead)} ${esc(texts.wm)} ${esc(lvTail)}</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Right ventricle.</b> ${esc(texts.rv)}</p>${GO('eject')}</div>
+      <div class="finding"><p><b>Left atrium.</b> ${esc(texts.la)}</p>${GO('fill')}</div>
+      <div class="finding"><p><b>Right atrium.</b> ${esc(texts.ra)}</p><span></span></div>
+      <div class="finding"><p><b>Aortic valve.</b> ${esc(texts.av)}</p>${GO('as')}</div>
+      <div class="finding"><p><b>Mitral valve.</b> ${esc(texts.mv)}</p>${GO('mr')}</div>
+      <div class="finding"><p><b>Tricuspid valve.</b> ${esc(texts.tv)}</p>${GO('pressure')}</div>
+      <div class="finding"><p><b>Pulmonic valve.</b> ${esc(texts.pv)}</p><span></span></div>
+      <div class="finding"><p><b>Aorta.</b> ${esc(texts.aorta)}</p><span></span></div>
+      <div class="finding"><p><b>Inferior vena cava.</b> ${esc(texts.ivc)}</p>${GO('ivc')}</div>
+      <div class="finding"><p><b>Pericardium.</b> ${esc(texts.peri)}</p><span></span></div>
+      <h3>Measurements</h3>
+      <div class="table-wrap"><table class="vt"><thead><tr><th>Measurement</th><th class="num">Value</th><th>Normal (${sex === 'F' ? 'women' : 'men'})</th><th>Grade</th></tr></thead>
+        <tbody>${rows.map(([k, v, n, g]) => `<tr class="${g && !/^normal|^$/.test(g) ? 'hit' : ''}"><td>${k}</td><td class="num">${v}</td><td>${n}</td><td>${g === 'below' ? 'below range' : g}</td></tr>`).join('')}</tbody></table></div>
+      <p class="sign">Report status: draft. Interpreting physician: not applicable (example report). Critical findings: none.</p>
+    </div>`;
+  return { html, ef, band, lap, rvsp, rap, geo, lvSize, B, c, sum, rows, texts };
+}
+
+/**
+ * The findings of case caseId (a key of CASES) for sex ('M' or 'F') as plain text, by the 15
+ * sections of a report as EchoPrime names them ({ lv, wm, ..., pveins }, echoprime.js SECTIONS):
+ * the sentences of buildReport's findings, with wall motion apart from the LV, and three
+ * sentences that the report does not print (atrial septum, pulmonary artery, pulmonary veins).
+ */
+export function sectionTexts(caseId, sex) {
+  return buildReport(caseId, sex).texts;
+}
+
+function rng(key, sex) {
+  const [lo, hi] = LANG[key][sex];
+  const d = LANG[key].unit === 'cm' ? 1 : 0;
+  return `${lo.toFixed(d)}–${hi.toFixed(d)} ${LANG[key].unit}`;
+}
+function langRV(rvb) {
+  // Mukherjee 2025 Table 1: RV basal diameter <4.1 cm normal; 4.1-4.4 mild; >4.4-4.9 moderate; >4.9 severe
+  const g = rvb < 4.1 ? 'Normal size' : rvb <= 4.4 ? 'Mildly dilated' : rvb <= 4.9 ? 'Moderately dilated' : 'Severely dilated';
+  return `${g} (basal diameter ${rvb.toFixed(1)} cm).`;
+}
+
+let host = null;
+
+export default {
+  key: 'report',
+  part: 'report',
+  title: 'Report',
+  dwell: 14,
+  defaults: { caseId: 'normal', sex: 'M' },
+  watch: ['caseId', 'sex', 'pheno'],
+  figure(fig) { host = fig.querySelector('#report-host'); return null; },
+  init() { host = document.getElementById('report-host'); },
+  tourEnter(set) { set({ caseId: 'normal', sex: 'M' }); },
+  tourTick(tt, set) { set({ caseId: tt < 3.5 ? 'normal' : tt < 7 ? 'hfref' : tt < 10.5 ? 'as' : 'hfpef' }); },
+  text(s, { cite }) {
+    for (const b of document.querySelectorAll('#ch-report [data-key=caseId] button[data-heart]')) b.hidden = b.dataset.val !== s.pheno;
+    const R = buildReport(CASES[s.caseId] ? s.caseId : 'normal', s.sex);
+    return {
+      readouts: [
+        { k: 'LVEF', v: String(R.ef), u: '%', flag: R.band !== 'normal' && R.band !== 'hyperdynamic' },
+        { k: 'Diastolic function', v: R.lap.grade === null ? 'normal LAP' : R.lap.grade === 0 ? 'normal' : `grade ${R.lap.grade}`, text: true, flag: !!R.lap.grade && R.lap.grade > 1 },
+        { k: 'RV systolic pressure', v: String(R.rvsp), u: 'mmHg', flag: R.c.tr >= 2.8 },
+      ],
+      live: `The summary statement is placed at the top of the report and addresses the indication for the study: <i>${esc(R.c.indication)}</i> Under each heading, structure is described before function, and every measured value is classified as normal or abnormal by comparison with the ${s.sex === 'F' ? 'women’s' : 'men’s'} normal range${cite('taub2025,lang2015')}.`,
+      extra: (art) => {
+        if (host) host.innerHTML = R.html;
+        const tb = art.querySelector('#report-inputs tbody');
+        if (tb) {
+          const link = (key) => `<a href="#${key}" data-go="${key}">${numOf(key)} ${NAME[key]}</a>`;
+          tb.innerHTML = [
+            ['LVEF (biplane)', `${R.ef}%`, link('eject')],
+            ['LV geometry', R.geo, link('eject')],
+            ['Diastolic grade', R.lap.grade === null ? 'normal LAP' : R.lap.grade === 0 ? 'normal' : `grade ${R.lap.grade}`, link('fill')],
+            ['RA pressure', `${R.rap} mmHg`, link('ivc')],
+            ['RV systolic pressure', `${R.rvsp} mmHg`, link('pressure')],
+          ].map(([a, b, c]) => `<tr><td>${a}</td><td class="num">${b}</td>${SHOW_LINKS ? `<td>${c}</td>` : ''}</tr>`).join('');
+          const head = art.querySelector('#report-inputs thead tr');
+          if (SHOW_LINKS && head && head.children.length < 3) head.insertAdjacentHTML('beforeend', '<th>Chapter</th>');
+        }
+      },
+    };
+  },
+};
